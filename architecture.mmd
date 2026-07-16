@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph INPUT["Input"]
+        A1["Meet transcript in Drive"]
+        A2["Voice memo / pasted notes"]
+    end
+
+    subgraph AGY["Antigravity agent (Gemini)"]
+        B1["1 · Ingest & summarize conversation"]
+        B2["2 · Extract items:<br/>decisions · action items · updates · dates · people"]
+        B3["3 · Route each item to target doc<br/>(consults Doc Registry)"]
+        B4["4 · Fan out subagents<br/>one per target doc"]
+        B1 --> B2 --> B3 --> B4
+    end
+
+    REG[("Doc Registry<br/>doc → purpose, section map,<br/>formatting rules")]
+    SKILLS[["Skills<br/>Docs-edit pattern +<br/>house formatting rules"]]
+
+    subgraph WRITE["Write path (per doc)"]
+        C1["Read doc structure<br/>gws docs documents get"]
+        C2["Locate target section<br/>(named range)"]
+        C3["Build insert request →<br/>gws docs documents batch-update --dry-run"]
+        C1 --> C2 --> C3
+    end
+
+    subgraph GWS["Tool layer — Google Workspace CLI (gws)"]
+        D1["gws drive / calendar / gmail<br/>(read transcripts, search, context)"]
+        D2["gws docs → Docs API batchUpdate (GA)<br/>OAuth in customer GCP project"]
+    end
+
+    E["5 · Walkthrough artifact:<br/>all proposed edits across docs<br/>(from --dry-run previews)"]
+    F{"User review"}
+    G["batch-update executed —<br/>edits committed to Google Docs"]
+
+    A1 & A2 --> B1
+    REG -.-> B3
+    SKILLS -.-> B4
+    B4 --> WRITE
+    B1 -.-> D1
+    C1 -.-> D2
+    C3 -.-> D2
+    WRITE --> E --> F
+    F -- approve --> G
+    F -- "comment / correct routing" --> B3
